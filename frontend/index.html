@@ -231,20 +231,39 @@
   }
 
   async function simulateBot() {
+    const content = document.getElementById("inputText").value;
+    if (!content || content.length < 10) {
+      document.getElementById("status").textContent = 
+        "Please type some content first to simulate bot transformation.";
+      return;
+    }
+
     document.getElementById("status").textContent = 
-      "Simulating bot attack...";
+      "Simulating bot transformation of your content...";
     document.getElementById("botBtn").disabled = true;
 
+    // Bot-like transformations of the user's content
+    const botContent = content
+      .replace(/\b(I|me|my|mine)\b/gi, "the system")
+      .replace(/\b(human|person|people)\b/gi, "user")
+      .replace(/\b(think|feel|believe)\b/gi, "process")
+      .replace(/\b(natural|organic)\b/gi, "algorithmic")
+      + " [AI-generated augmentation]";
+
+    // Generate bot-like signals based on content characteristics
+    const wordCount = content.trim().split(/\s+/).length;
+    const charCount = content.length;
+    
     const payload = {
-      content: "This is an AI generated fake review.",
-      keystroke_gap_ms: 5,
-      session_duration_s: 0.8,
-      edit_count: 0,
-      cursor_entropy: 0.02,
-      content_length: 300,
-      device_score: 0.1,
-      typing_variance: 0.005,
-      pause_ratio: 0.001
+      content: botContent,
+      keystroke_gap_ms: 3 + Math.random() * 2,  // Very consistent, fast typing
+      session_duration_s: Math.min(charCount * 0.01, 2.0),  // Unrealistically fast
+      edit_count: 0,  // No edits - perfect first draft
+      cursor_entropy: 0.01 + Math.random() * 0.02,  // Minimal mouse movement
+      content_length: wordCount,
+      device_score: 0.05 + Math.random() * 0.1,  // Low device score
+      typing_variance: 0.001 + Math.random() * 0.003,  // Very consistent typing
+      pause_ratio: 0.001 + Math.random() * 0.002  // Almost no natural pauses
     };
 
     try {
