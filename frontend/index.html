@@ -169,10 +169,15 @@
       
       editCount = 0; // No edits for pasted content
       
+      // Override other signals to be bot-like
+      sessionStart = Date.now() - (pastedLength * 10); // Very short session
+      mousePositions = []; // Minimal mouse movement
+      
       // Update display
       const avg = keystrokes.reduce((a,b)=>a+b,0) / keystrokes.length;
       document.getElementById("sig-keystroke").textContent = Math.round(avg) + "ms";
       document.getElementById("sig-edits").textContent = editCount;
+      document.getElementById("sig-entropy").textContent = "0.02";
       
       if (!isTyping && textarea.value.length > 10) {
         isTyping = true;
@@ -229,7 +234,7 @@
       edit_count: editCount,
       cursor_entropy: entropy,
       content_length: wordCount,
-      device_score: 0.85,
+      device_score: isPastedContent ? 0.1 : 0.85,  // Low device score for pasted content
       typing_variance: typingVariance,
       pause_ratio: pauseRatio
     };
