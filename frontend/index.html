@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verity — Proof that it's human</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:#0a0a0a; color:white; font-family:'Inter',sans-serif; -webkit-font-smoothing:antialiased; }
+    .container { max-width:800px; margin:0 auto; padding:0 24px; }
+    nav { border-bottom:1px solid #1a1a1a; padding:18px 0; }
+    nav .inner { display:flex; justify-content:space-between; align-items:center; max-width:800px; margin:0 auto; padding:0 24px; }
+    nav .logo { font-size:18px; font-weight:600; }
+    nav .badge { font-size:11px; background:#111; border:1px solid #2a2a2a; color:#888; padding:4px 12px; border-radius:20px; }
+    .hero { text-align:center; padding:80px 0 60px; }
+    .hero h1 { font-size:42px; font-weight:700; line-height:1.15; margin-bottom:16px; }
+    .hero p { color:#888; font-size:16px; max-width:500px; margin:0 auto; line-height:1.75; }
+    .demo-area { background:#111; border:1px solid #1f1f1f; border-radius:16px; padding:32px; margin:40px 0; }
+    .demo-area h2 { font-size:16px; font-weight:500; margin-bottom:8px; color:#ccc; }
+    .demo-area p { font-size:13px; color:#555; margin-bottom:20px; }
+    textarea { width:100%; background:#0a0a0a; border:1px solid #2a2a2a; border-radius:8px; color:white; padding:16px; font-size:14px; font-family:'Inter',sans-serif; resize:vertical; min-height:120px; outline:none; line-height:1.7; }
+    textarea:focus { border-color:#333; }
+    textarea::placeholder { color:#333; }
+    .verify-btn { margin-top:16px; background:white; color:black; border:none; padding:12px 28px; border-radius:8px; font-size:14px; font-weight:500; cursor:pointer; transition:opacity 0.15s; }
+    .verify-btn:hover { opacity:0.85; }
+    .verify-btn:disabled { opacity:0.4; cursor:default; }
+    .signals { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:20px; }
+    .signal-card { background:#0f0f0f; border:1px solid #1a1a1a; border-radius:8px; padding:12px; text-align:center; }
+    .signal-card .val { font-size:15px; font-weight:500; font-family:monospace; color:white; }
+    .signal-card .lbl { font-size:10px; color:#555; margin-top:4px; }
+    .result { margin-top:24px; border-radius:12px; padding:24px; display:none; }
+    .result.human { background:#0d1f0d; border:1px solid #1a3a1a; }
+    .result.bot { background:#1f0d0d; border:1px solid #3a1a1a; }
+    .result .verdict { font-size:22px; font-weight:600; margin-bottom:16px; }
+    .result.human .verdict { color:#4ade80; }
+    .result.bot .verdict { color:#f87171; }
+    .cert-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+    .cert-row { background:rgba(255,255,255,0.03); border-radius:6px; padding:10px 14px; }
+    .cert-row .k { font-size:11px; color:#555; margin-bottom:3px; }
+    .cert-row .v { font-size:12px; color:#ccc; font-family:monospace; word-break:break-all; }
+    .meter-wrap { margin:20px 0 8px; }
+    .meter-label { display:flex; justify-content:space-between; font-size:12px; color:#555; margin-bottom:8px; }
+    .meter { height:6px; background:#1a1a1a; border-radius:3px; overflow:hidden; }
+    .meter-fill { height:100%; border-radius:3px; transition:width 0.8s ease; }
+    .status { font-size:12px; color:#555; margin-top:12px; text-align:center; min-height:18px; }
+    .footer { border-top:1px solid #1a1a1a; padding:24px 0; text-align:center; color:#333; font-size:12px; margin-top:60px; }
+    @media(max-width:600px) { .signals { grid-template-columns:repeat(2,1fr); } .cert-grid { grid-template-columns:1fr; } .hero h1 { font-size:28px; } }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="inner">
+    <div class="logo">Verity</div>
+    <div class="badge">Meta PyTorch Hackathon 2026</div>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="hero">
+    <h1>Proof that it's human.</h1>
+    <p>Type anything below. Verity's PyTorch model analyzes your behavioral signals in real time and issues a cryptographic certificate proving human presence.</p>
+  </div>
+
+  <div class="demo-area">
+    <h2>Live verification demo</h2>
+    <p>Start typing — signals are captured automatically as you write.</p>
+
+    <textarea id="inputText" placeholder="Write anything here... a review, a message, a thought. The longer you write, the more accurate the verification becomes."></textarea>
+
+    <div class="signals" id="signals">
+      <div class="signal-card"><div class="val" id="sig-keystroke">—</div><div class="lbl">Keystroke gap ms</div></div>
+      <div class="signal-card"><div class="val" id="sig-duration">0s</div><div class="lbl">Session duration</div></div>
+      <div class="signal-card"><div class="val" id="sig-edits">0</div><div class="lbl">Edit events</div></div>
+      <div class="signal-card"><div class="val" id="sig-entropy">—</div><div class="lbl">Cursor entropy</div></div>
+    </div>
+
+    <button class="verify-btn" id="verifyBtn" onclick="verify()" disabled>
+      Verify human presence
+    </button>
+    <div class="status" id="status">Start typing to enable verification</div>
+
+    <div class="result" id="result">
+      <div class="verdict" id="verdict"></div>
+      <div class="meter-wrap">
+        <div class="meter-label"><span>Bot</span><span id="score-label">0%</span><span>Human</span></div>
+        <div class="meter"><div class="meter-fill" id="meter-fill"></div></div>
+      </div>
+      <div class="cert-grid" id="cert-grid"></div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  <div class="container">Verity — Built for Meta PyTorch Hackathon 2026 · Proof that it's human</div>
+</div>
+
+<script>
+  const API = "";
+
+  let keystrokes = [];
+  let lastKeyTime = null;
+  let sessionStart = Date.now();
+  let editCount = 0;
+  let mousePositions = [];
+  let isTyping = false;
+
+  const textarea = document.getElementById("inputText");
+
+  textarea.addEventListener("keydown", (e) => {
+    const now = Date.now();
+    if (lastKeyTime !== null) {
+      const gap = now - lastKeyTime;
+      keystrokes.push(gap);
+    }
+    lastKeyTime = now;
+
+    if (e.key === "Backspace" || e.key === "Delete") {
+      editCount++;
+      document.getElementById("sig-edits").textContent = editCount;
+    }
+
+    if (keystrokes.length > 0) {
+      const avg = keystrokes.reduce((a,b)=>a+b,0) / keystrokes.length;
+      document.getElementById("sig-keystroke").textContent = Math.round(avg) + "ms";
+    }
+
+    const elapsed = Math.round((Date.now() - sessionStart) / 1000);
+    document.getElementById("sig-duration").textContent = elapsed + "s";
+
+    if (!isTyping && textarea.value.length > 10) {
+      isTyping = true;
+      document.getElementById("verifyBtn").disabled = false;
+      document.getElementById("status").textContent = "Ready to verify";
+    }
+  });
+
+  document.addEventListener("mousemove", (e) => {
+    mousePositions.push({ x: e.clientX, y: e.clientY, t: Date.now() });
+    if (mousePositions.length > 50) mousePositions.shift();
+    const entropy = calcEntropy();
+    document.getElementById("sig-entropy").textContent = entropy.toFixed(2);
+  });
+
+  function calcEntropy() {
+    if (mousePositions.length < 2) return 0;
+    let totalDist = 0;
+    for (let i = 1; i < mousePositions.length; i++) {
+      const dx = mousePositions[i].x - mousePositions[i-1].x;
+      const dy = mousePositions[i].y - mousePositions[i-1].y;
+      totalDist += Math.sqrt(dx*dx + dy*dy);
+    }
+    return Math.min(totalDist / (mousePositions.length * 100), 1);
+  }
+
+  function calcVariance(arr) {
+    if (arr.length < 2) return 0;
+    const mean = arr.reduce((a,b)=>a+b,0) / arr.length;
+    const variance = arr.reduce((a,b)=>a+(b-mean)**2,0) / arr.length;
+    return Math.sqrt(variance);
+  }
+
+  async function verify() {
+    const content = document.getElementById("inputText").value;
+    if (!content || content.length < 10) return;
+
+    document.getElementById("status").textContent = "Analyzing behavioral signals...";
+    document.getElementById("verifyBtn").disabled = true;
+
+    const avgGap = keystrokes.length > 0
+      ? keystrokes.reduce((a,b)=>a+b,0) / keystrokes.length : 150;
+    const sessionDuration = (Date.now() - sessionStart) / 1000;
+    const entropy = calcEntropy();
+    const typingVariance = calcVariance(keystrokes);
+    const wordCount = content.trim().split(/\s+/).length;
+    const pauseRatio = keystrokes.filter(g => g > 500).length / Math.max(keystrokes.length, 1);
+
+    const payload = {
+      content,
+      keystroke_gap_ms: avgGap,
+      session_duration_s: sessionDuration,
+      edit_count: editCount,
+      cursor_entropy: entropy,
+      content_length: wordCount,
+      device_score: 0.85,
+      typing_variance: typingVariance,
+      pause_ratio: pauseRatio
+    };
+
+    try {
+      const res = await fetch("http://127.0.0.1:5000/verify", {
+        method: "POST",
+        mode: "cors",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        throw new Error("API error: " + res.status);
+      }
+
+      const cert = await res.json();
+      showResult(cert);
+
+    } catch (err) {
+      console.error("Fetch error:", err);
+      document.getElementById("status").textContent = "Error: " + err.message;
+      document.getElementById("verifyBtn").disabled = false;
+    }
+  }
+
+  function showResult(cert) {
+    const resultEl = document.getElementById("result");
+    const isHuman = cert.verified;
+    const score = cert.human_score;
+
+    resultEl.className = "result " + (isHuman ? "human" : "bot");
+    resultEl.style.display = "block";
+
+    document.getElementById("verdict").textContent =
+      isHuman ? "Verified — Human presence confirmed" : "Rejected — Bot behavior detected";
+
+    const pct = Math.round(score * 100);
+    document.getElementById("score-label").textContent = pct + "% human";
+    const fill = document.getElementById("meter-fill");
+    fill.style.width = pct + "%";
+    fill.style.background = isHuman ? "#4ade80" : "#f87171";
+
+    const grid = document.getElementById("cert-grid");
+    grid.innerHTML = `
+      <div class="cert-row"><div class="k">Certificate ID</div><div class="v">${cert.certificate_id}</div></div>
+      <div class="cert-row"><div class="k">Human score</div><div class="v">${(score * 100).toFixed(1)}%</div></div>
+      <div class="cert-row"><div class="k">Content hash</div><div class="v">${cert.content_hash}</div></div>
+      <div class="cert-row"><div class="k">Timestamp</div><div class="v">${cert.timestamp}</div></div>
+    `;
+
+    document.getElementById("status").textContent = 
+      isHuman ? "Certificate issued successfully" : "Submission blocked";
+    document.getElementById("verifyBtn").disabled = false;
+  }
+</script>
+</body>
+</html>
