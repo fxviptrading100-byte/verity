@@ -122,6 +122,7 @@
   let editCount = 0;
   let mousePositions = [];
   let isTyping = false;
+  let isPastedContent = false;
 
   const textarea = document.getElementById("inputText");
 
@@ -132,6 +133,7 @@
       keystrokes.push(gap);
     }
     lastKeyTime = now;
+    isPastedContent = false; // Reset paste flag on actual typing
 
     if (e.key === "Backspace" || e.key === "Delete") {
       editCount++;
@@ -151,6 +153,33 @@
       document.getElementById("verifyBtn").disabled = false;
       document.getElementById("status").textContent = "Ready to verify";
     }
+  });
+
+  textarea.addEventListener("paste", (e) => {
+    setTimeout(() => {
+      isPastedContent = true;
+      // Generate bot-like signals for pasted content
+      const pastedLength = e.clipboardData.getData('text').length;
+      
+      // Simulate bot-like keystrokes for the pasted content
+      keystrokes = [];
+      for (let i = 0; i < Math.min(pastedLength, 50); i++) {
+        keystrokes.push(5 + Math.random() * 10); // Very fast, consistent typing
+      }
+      
+      editCount = 0; // No edits for pasted content
+      
+      // Update display
+      const avg = keystrokes.reduce((a,b)=>a+b,0) / keystrokes.length;
+      document.getElementById("sig-keystroke").textContent = Math.round(avg) + "ms";
+      document.getElementById("sig-edits").textContent = editCount;
+      
+      if (!isTyping && textarea.value.length > 10) {
+        isTyping = true;
+        document.getElementById("verifyBtn").disabled = false;
+        document.getElementById("status").textContent = "Pasted content detected";
+      }
+    }, 10);
   });
 
   document.addEventListener("mousemove", (e) => {
