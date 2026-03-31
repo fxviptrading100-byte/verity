@@ -25,6 +25,20 @@
     .verify-btn { margin-top:16px; background:white; color:black; border:none; padding:12px 28px; border-radius:8px; font-size:14px; font-weight:500; cursor:pointer; transition:opacity 0.15s; }
     .verify-btn:hover { opacity:0.85; }
     .verify-btn:disabled { opacity:0.4; cursor:default; }
+    .bot-btn {
+      margin-top: 16px;
+      margin-left: 12px;
+      background: transparent;
+      color: #f87171;
+      border: 1px solid #3a1a1a;
+      padding: 12px 28px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .bot-btn:hover { opacity: 0.85; }
     .signals { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:20px; }
     .signal-card { background:#0f0f0f; border:1px solid #1a1a1a; border-radius:8px; padding:12px; text-align:center; }
     .signal-card .val { font-size:15px; font-weight:500; font-family:monospace; color:white; }
@@ -78,6 +92,9 @@
 
     <button class="verify-btn" id="verifyBtn" onclick="verify()" disabled>
       Verify human presence
+    </button>
+    <button class="bot-btn" id="botBtn" onclick="simulateBot()">
+      Simulate bot attack
     </button>
     <div class="status" id="status">Start typing to enable verification</div>
 
@@ -211,6 +228,39 @@
       document.getElementById("status").textContent = "Error: " + err.message;
       document.getElementById("verifyBtn").disabled = false;
     }
+  }
+
+  async function simulateBot() {
+    document.getElementById("status").textContent = 
+      "Simulating bot attack...";
+    document.getElementById("botBtn").disabled = true;
+
+    const payload = {
+      content: "This is an AI generated fake review.",
+      keystroke_gap_ms: 5,
+      session_duration_s: 0.8,
+      edit_count: 0,
+      cursor_entropy: 0.02,
+      content_length: 300,
+      device_score: 0.1,
+      typing_variance: 0.005,
+      pause_ratio: 0.001
+    };
+
+    try {
+      const res = await fetch("/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const cert = await res.json();
+      showResult(cert);
+    } catch (err) {
+      document.getElementById("status").textContent = 
+        "Error: " + err.message;
+    }
+
+    document.getElementById("botBtn").disabled = false;
   }
 
   function showResult(cert) {
