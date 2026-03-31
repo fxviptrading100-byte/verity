@@ -1,0 +1,10 @@
+torch
+numpy
+flask
+flask-cors
+scikit-learn
+pandas
+psycopg2-binary
+sqlalchemy
+python-dotenv
+gunicorn
