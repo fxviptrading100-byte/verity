@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verify Certificate — Verity</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:#0a0a0a; color:white; font-family:'Inter',sans-serif; -webkit-font-smoothing:antialiased; }
+    nav { border-bottom:1px solid #1a1a1a; padding:18px 24px; display:flex; justify-content:space-between; align-items:center; }
+    nav .logo { font-size:18px; font-weight:600; cursor:pointer; }
+    .container { max-width:600px; margin:0 auto; padding:80px 24px; }
+    h1 { font-size:32px; font-weight:700; margin-bottom:10px; }
+    .sub { color:#888; font-size:15px; margin-bottom:40px; line-height:1.7; }
+    .search { display:flex; gap:12px; margin-bottom:40px; }
+    input { flex:1; background:#111; border:1px solid #2a2a2a; border-radius:8px; color:white; padding:14px 18px; font-size:14px; outline:none; font-family:'Inter',sans-serif; }
+    input:focus { border-color:#333; }
+    input::placeholder { color:#444; }
+    button { background:white; color:black; border:none; padding:14px 24px; border-radius:8px; font-size:14px; font-weight:500; cursor:pointer; white-space:nowrap; }
+    button:hover { opacity:0.85; }
+    .cert { border-radius:12px; padding:28px; display:none; }
+    .cert.human { background:#0d1f0d; border:1px solid #1a3a1a; }
+    .cert.bot { background:#1f0d0d; border:1px solid #3a1a1a; }
+    .verdict { font-size:22px; font-weight:600; margin-bottom:24px; }
+    .cert.human .verdict { color:#4ade80; }
+    .cert.bot .verdict { color:#f87171; }
+    .meter-wrap { margin-bottom:24px; }
+    .meter-label { display:flex; justify-content:space-between; font-size:12px; color:#555; margin-bottom:8px; }
+    .meter { height:6px; background:#1a1a1a; border-radius:3px; overflow:hidden; }
+    .meter-fill { height:100%; border-radius:3px; transition:width 0.8s ease; }
+    .grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px; }
+    .row { background:rgba(255,255,255,0.04); border-radius:8px; padding:12px 16px; }
+    .row .k { font-size:11px; color:#555; margin-bottom:4px; }
+    .row .v { font-size:13px; color:#ccc; font-family:monospace; word-break:break-all; }
+    .signals { background:rgba(255,255,255,0.02); border-radius:8px; padding:16px; margin-top:10px; }
+    .signals h3 { font-size:12px; color:#555; margin-bottom:12px; letter-spacing:1px; }
+    .signal-row { display:flex; justify-content:space-between; font-size:12px; padding:6px 0; border-bottom:1px solid #1a1a1a; }
+    .signal-row:last-child { border-bottom:none; }
+    .signal-row .k { color:#555; }
+    .signal-row .v { color:#888; font-family:monospace; }
+    .error { color:#f87171; font-size:14px; margin-top:16px; display:none; }
+    .loading { color:#555; font-size:14px; margin-top:16px; display:none; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="logo" onclick="window.location='/'">Verity</div>
+  <div style="font-size:12px;color:#444;">Certificate verification</div>
+</nav>
+
+<div class="container">
+  <h1>Verify a certificate</h1>
+  <p class="sub">Enter a Verity certificate ID to check if content was verified as human-made and has not been tampered with since issuance.</p>
+
+  <div class="search">
+    <input type="text" id="certInput" placeholder="verity_abc123..." />
+    <button onclick="lookup()">Verify</button>
+  </div>
+
+  <div class="loading" id="loading">Looking up certificate...</div>
+  <div class="error" id="error"></div>
+
+  <div class="cert" id="cert">
+    <div class="verdict" id="verdict"></div>
+    <div class="meter-wrap">
+      <div class="meter-label">
+        <span>Bot</span>
+        <span id="score-label"></span>
+        <span>Human</span>
+      </div>
+      <div class="meter">
+        <div class="meter-fill" id="meter-fill"></div>
+      </div>
+    </div>
+    <div class="grid">
+      <div class="row"><div class="k">Certificate ID</div><div class="v" id="c-id"></div></div>
+      <div class="row"><div class="k">Human score</div><div class="v" id="c-score"></div></div>
+      <div class="row"><div class="k">Content hash</div><div class="v" id="c-hash"></div></div>
+      <div class="row"><div class="k">Issued at</div><div class="v" id="c-time"></div></div>
+    </div>
+    <div class="signals">
+      <h3>BEHAVIORAL SIGNALS</h3>
+      <div class="signal-row"><span class="k">Keystroke gap</span><span class="v" id="s-key"></span></div>
+      <div class="signal-row"><span class="k">Session duration</span><span class="v" id="s-dur"></span></div>
+      <div class="signal-row"><span class="k">Edit events</span><span class="v" id="s-edit"></span></div>
+      <div class="signal-row"><span class="k">Cursor entropy</span><span class="v" id="s-ent"></span></div>
+      <div class="signal-row"><span class="k">Device score</span><span class="v" id="s-dev"></span></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const certId = window.location.pathname.split('/verify/')[1];
+  if (certId) {
+    document.getElementById('certInput').value = certId;
+    lookup();
+  }
+
+  async function lookup() {
+    const id = document.getElementById('certInput').value.trim();
+    if (!id) return;
+
+    document.getElementById('loading').style.display = 'block';
+    document.getElementById('error').style.display = 'none';
+    document.getElementById('cert').style.display = 'none';
+
+    try {
+      const res = await fetch('/certificate/' + id);
+      const data = await res.json();
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      showCert(data);
+    } catch (err) {
+      document.getElementById('error').textContent = 
+        'Certificate not found. This ID does not exist in the Verity log.';
+      document.getElementById('error').style.display = 'block';
+    }
+
+    document.getElementById('loading').style.display = 'none';
+  }
+
+  function showCert(data) {
+    const isHuman = data.verified;
+    const score = data.human_score;
+    const pct = Math.round(score * 100);
+
+    const certEl = document.getElementById('cert');
+    certEl.className = 'cert ' + (isHuman ? 'human' : 'bot');
+    certEl.style.display = 'block';
+
+    document.getElementById('verdict').textContent = 
+      isHuman ? 'Verified — Human presence confirmed' : 'Rejected — Bot behavior detected';
+
+    document.getElementById('score-label').textContent = pct + '% human';
+    const fill = document.getElementById('meter-fill');
+    fill.style.width = pct + '%';
+    fill.style.background = isHuman ? '#4ade80' : '#f87171';
+
+    document.getElementById('c-id').textContent = data.certificate_id;
+    document.getElementById('c-score').textContent = pct + '%';
+    document.getElementById('c-hash').textContent = data.content_hash;
+    document.getElementById('c-time').textContent = 
+      new Date(data.timestamp).toLocaleString();
+
+    const s = data.signals || {};
+    document.getElementById('s-key').textContent = 
+      s.keystroke_gap_ms ? s.keystroke_gap_ms + 'ms' : 'N/A';
+    document.getElementById('s-dur').textContent = 
+      s.session_duration_s ? s.session_duration_s + 's' : 'N/A';
+    document.getElementById('s-edit').textContent = 
+      s.edit_count !== undefined ? s.edit_count : 'N/A';
+    document.getElementById('s-ent').textContent = 
+      s.cursor_entropy ? s.cursor_entropy.toFixed(4) : 'N/A';
+    document.getElementById('s-dev').textContent = 
+      s.device_score ? (s.device_score * 100).toFixed(0) + '%' : 'N/A';
+  }
+
+  document.getElementById('certInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') lookup();
+  });
+</script>
+</body>
+</html>
