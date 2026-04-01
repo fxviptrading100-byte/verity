@@ -203,62 +203,51 @@ def verify():
 @app.route('/api/certificate/<cert_id>', methods=['GET'])
 def get_certificate(cert_id):
     import json
-    if use_db:
-        with engine.connect() as conn:
-            result = conn.execute(
-                text('SELECT * FROM certificates WHERE id = :id'),
-                {'id': cert_id}
-            ).fetchone()
+    with engine.connect() as conn:
+        result = conn.execute(
+            text('SELECT * FROM certificates WHERE id = :id'),
+            {'id': cert_id}
+        ).fetchone()
 
-        if not result:
-            return jsonify({'error': 'Certificate not found'}), 404
+    if not result:
+        return jsonify({'error': 'Certificate not found'}), 404
 
+    raw = {}
+    try:
+        if result.raw_signals:
+            if isinstance(result.raw_signals, str):
+                raw = json.loads(result.raw_signals)
+            elif isinstance(result.raw_signals, dict):
+                raw = result.raw_signals
+    except Exception as e:
+        print(f'Error parsing raw_signals: {e}')
         raw = {}
-        try:
-            raw = json.loads(result.raw_signals) if result.raw_signals else {}
-        except:
-            pass
 
-        return jsonify({
-            'certificate_id': result.id,
-            'content_hash': result.content_hash,
-            'human_score': result.human_score,
-            'verified': result.verified,
-            'timestamp': result.timestamp.isoformat() + 'Z',
-            'breakdown': {
-                'keyboard_rhythm': result.keyboard_rhythm,
-                'mouse_naturalness': result.mouse_naturalness,
-                'session_behavior': result.session_behavior,
-                'baseline_match': result.baseline_match
-            },
-            'raw': raw
-        })
-    else:
-        # In-memory storage
-        cert = certificates.get(cert_id)
-        if not cert:
-            return jsonify({'error': 'Certificate not found'}), 404
-        
-        raw = {}
-        try:
-            raw = json.loads(cert.get('raw_signals', '{}')) if cert.get('raw_signals') else {}
-        except:
-            pass
+    if not raw:
+        raw = {
+            'dwell_mean_ms': float(result.dwell_mean) if result.dwell_mean else 0,
+            'flight_mean_ms': float(result.flight_mean) if result.flight_mean else 0,
+            'backspace_ratio': float(result.backspace_ratio) if result.backspace_ratio else 0,
+            'mouse_speed_mean': float(result.mouse_speed_mean) if result.mouse_speed_mean else 0,
+            'mouse_jerk_mean': float(result.mouse_jerk_mean) if result.mouse_jerk_mean else 0,
+            'session_duration_s': float(result.session_duration) if result.session_duration else 0,
+            'total_keys': int(result.total_keys) if result.total_keys else 0,
+        }
 
-        return jsonify({
-            'certificate_id': cert['id'],
-            'content_hash': cert['content_hash'],
-            'human_score': cert['human_score'],
-            'verified': cert['verified'],
-            'timestamp': cert['timestamp'].isoformat() + 'Z',
-            'breakdown': {
-                'keyboard_rhythm': cert.get('keyboard_rhythm', 0),
-                'mouse_naturalness': cert.get('mouse_naturalness', 0),
-                'session_behavior': cert.get('session_behavior', 0),
-                'baseline_match': cert.get('baseline_match', None)
-            },
-            'raw': raw
-        })
+    return jsonify({
+        'certificate_id': result.id,
+        'content_hash': result.content_hash,
+        'human_score': float(result.human_score),
+        'verified': bool(result.verified),
+        'timestamp': result.timestamp.isoformat() + 'Z',
+        'breakdown': {
+            'keyboard_rhythm': float(result.keyboard_rhythm) if result.keyboard_rhythm else 0,
+            'mouse_naturalness': float(result.mouse_naturalness) if result.mouse_naturalness else 0,
+            'session_behavior': float(result.session_behavior) if result.session_behavior else 0,
+            'baseline_match': float(result.baseline_match) if result.baseline_match else None
+        },
+        'raw': raw
+    })
 
 @app.route('/certificates', methods=['GET'])
 def list_certificates():
