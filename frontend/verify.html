@@ -147,17 +147,22 @@
     document.getElementById('c-time').textContent = 
       new Date(data.timestamp).toLocaleString();
 
-    const s = data.signals || {};
+    const raw = data.raw || s || {};
     document.getElementById('s-key').textContent = 
+      raw.dwell_mean_ms ? Math.round(raw.dwell_mean_ms) + 'ms' : 
       s.keystroke_gap_ms ? s.keystroke_gap_ms + 'ms' : 'N/A';
     document.getElementById('s-dur').textContent = 
+      raw.session_duration_s ? raw.session_duration_s + 's' : 
       s.session_duration_s ? s.session_duration_s + 's' : 'N/A';
     document.getElementById('s-edit').textContent = 
+      raw.total_keys ? raw.total_keys + ' keys' :
       s.edit_count !== undefined ? s.edit_count : 'N/A';
     document.getElementById('s-ent').textContent = 
+      raw.mouse_speed_mean ? Math.round(raw.mouse_speed_mean) + ' px/s' :
       s.cursor_entropy ? s.cursor_entropy.toFixed(4) : 'N/A';
     document.getElementById('s-dev').textContent = 
-      s.device_score ? (s.device_score * 100).toFixed(0) + '%' : 'N/A';
+      raw.backspace_ratio !== undefined ? 
+      (raw.backspace_ratio * 100).toFixed(1) + '% backspace' : 'N/A';
   }
 
   document.getElementById('certInput').addEventListener('keydown', (e) => {
