@@ -108,6 +108,11 @@
 
     try {
       const res = await fetch('/api/certificate/' + id);
+      
+      if (!res.ok) {
+        throw new Error('Certificate not found');
+      }
+      
       const data = await res.json();
 
       if (data.error) {
@@ -115,10 +120,12 @@
       }
 
       showCert(data);
+
     } catch (err) {
       document.getElementById('error').textContent = 
         'Certificate not found. This ID does not exist in the Verity log.';
       document.getElementById('error').style.display = 'block';
+      document.getElementById('cert').style.display = 'none';
     }
 
     document.getElementById('loading').style.display = 'none';
@@ -128,6 +135,7 @@
     const isHuman = data.verified;
     const score = data.human_score;
     const pct = Math.round(score * 100);
+    const raw = data.raw || {};
 
     const certEl = document.getElementById('cert');
     certEl.className = 'cert ' + (isHuman ? 'human' : 'bot');
@@ -147,22 +155,17 @@
     document.getElementById('c-time').textContent = 
       new Date(data.timestamp).toLocaleString();
 
-    const raw = data.raw || s || {};
     document.getElementById('s-key').textContent = 
-      raw.dwell_mean_ms ? Math.round(raw.dwell_mean_ms) + 'ms' : 
-      s.keystroke_gap_ms ? s.keystroke_gap_ms + 'ms' : 'N/A';
+      raw.dwell_mean_ms ? Math.round(raw.dwell_mean_ms) + 'ms avg dwell' : 'N/A';
     document.getElementById('s-dur').textContent = 
-      raw.session_duration_s ? raw.session_duration_s + 's' : 
-      s.session_duration_s ? s.session_duration_s + 's' : 'N/A';
+      raw.session_duration_s ? raw.session_duration_s + 's' : 'N/A';
     document.getElementById('s-edit').textContent = 
-      raw.total_keys ? raw.total_keys + ' keys' :
-      s.edit_count !== undefined ? s.edit_count : 'N/A';
+      raw.total_keys ? raw.total_keys + ' total keys' : 'N/A';
     document.getElementById('s-ent').textContent = 
-      raw.mouse_speed_mean ? Math.round(raw.mouse_speed_mean) + ' px/s' :
-      s.cursor_entropy ? s.cursor_entropy.toFixed(4) : 'N/A';
+      raw.mouse_speed_mean ? Math.round(raw.mouse_speed_mean) + ' px/s' : 'N/A';
     document.getElementById('s-dev').textContent = 
       raw.backspace_ratio !== undefined ? 
-      (raw.backspace_ratio * 100).toFixed(1) + '% backspace' : 'N/A';
+      (raw.backspace_ratio * 100).toFixed(1) + '% backspace rate' : 'N/A';
   }
 
   document.getElementById('certInput').addEventListener('keydown', (e) => {
