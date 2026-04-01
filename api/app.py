@@ -200,6 +200,7 @@ def verify():
     })
 
 @app.route('/certificate/<cert_id>', methods=['GET'])
+@app.route('/api/certificate/<cert_id>', methods=['GET'])
 def get_certificate(cert_id):
     import json
     if use_db:

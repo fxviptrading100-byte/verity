@@ -107,7 +107,7 @@
     document.getElementById('cert').style.display = 'none';
 
     try {
-      const res = await fetch('/certificate/' + id);
+      const res = await fetch('/api/certificate/' + id);
       const data = await res.json();
 
       if (data.error) {
