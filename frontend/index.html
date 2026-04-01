@@ -4,347 +4,404 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Verity — Proof that it's human</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="/verity-sdk.js"></script>
   <style>
-    * { margin:0; padding:0; box-sizing:border-box; }
-    body { background:#0a0a0a; color:white; font-family:'Inter',sans-serif; -webkit-font-smoothing:antialiased; }
-    .container { max-width:800px; margin:0 auto; padding:0 24px; }
-    nav { border-bottom:1px solid #1a1a1a; padding:18px 0; }
-    nav .inner { display:flex; justify-content:space-between; align-items:center; max-width:800px; margin:0 auto; padding:0 24px; }
-    nav .logo { font-size:18px; font-weight:600; }
-    nav .badge { font-size:11px; background:#111; border:1px solid #2a2a2a; color:#888; padding:4px 12px; border-radius:20px; }
-    .hero { text-align:center; padding:80px 0 60px; }
-    .hero h1 { font-size:42px; font-weight:700; line-height:1.15; margin-bottom:16px; }
-    .hero p { color:#888; font-size:16px; max-width:500px; margin:0 auto; line-height:1.75; }
-    .demo-area { background:#111; border:1px solid #1f1f1f; border-radius:16px; padding:32px; margin:40px 0; }
-    .demo-area h2 { font-size:16px; font-weight:500; margin-bottom:8px; color:#ccc; }
-    .demo-area p { font-size:13px; color:#555; margin-bottom:20px; }
-    textarea { width:100%; background:#0a0a0a; border:1px solid #2a2a2a; border-radius:8px; color:white; padding:16px; font-size:14px; font-family:'Inter',sans-serif; resize:vertical; min-height:120px; outline:none; line-height:1.7; }
-    textarea:focus { border-color:#333; }
-    textarea::placeholder { color:#333; }
-    .verify-btn { margin-top:16px; background:white; color:black; border:none; padding:12px 28px; border-radius:8px; font-size:14px; font-weight:500; cursor:pointer; transition:opacity 0.15s; }
-    .verify-btn:hover { opacity:0.85; }
-    .verify-btn:disabled { opacity:0.4; cursor:default; }
-    .bot-btn {
-      margin-top: 16px;
-      margin-left: 12px;
-      background: transparent;
-      color: #f87171;
-      border: 1px solid #3a1a1a;
-      padding: 12px 28px;
-      border-radius: 8px;
-      font-size: 14px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: opacity 0.15s;
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{background:#0a0a0a;color:white;font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;}
+    nav{border-bottom:1px solid #1a1a1a;padding:16px 24px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:#0a0a0a;z-index:100;}
+    .logo{font-size:18px;font-weight:700;letter-spacing:-0.5px;}
+    .nav-badge{font-size:11px;color:#555;border:1px solid #222;padding:4px 12px;border-radius:20px;}
+    .container{max-width:780px;margin:0 auto;padding:0 24px;}
+    .hero{text-align:center;padding:60px 0 40px;}
+    .hero h1{font-size:40px;font-weight:700;line-height:1.15;margin-bottom:14px;letter-spacing:-1px;}
+    .hero p{color:#666;font-size:15px;max-width:480px;margin:0 auto;line-height:1.8;}
+    .enroll-section{background:#0f0f0f;border:1px solid #1f1f1f;border-radius:16px;padding:28px;margin:32px 0;}
+    .section-label{font-size:10px;letter-spacing:3px;color:#555;font-weight:500;margin-bottom:12px;}
+    .enroll-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+    .enroll-title{font-size:15px;font-weight:500;}
+    .enroll-status{font-size:12px;color:#555;}
+    .progress-bar{height:4px;background:#1a1a1a;border-radius:2px;overflow:hidden;margin-bottom:16px;}
+    .progress-fill{height:100%;background:#4ade80;border-radius:2px;transition:width 0.3s ease;width:0%;}
+    .enroll-textarea{width:100%;background:#0a0a0a;border:1px solid #222;border-radius:8px;color:white;padding:14px;font-size:14px;font-family:'Inter',sans-serif;resize:vertical;min-height:90px;outline:none;line-height:1.7;}
+    .enroll-textarea:focus{border-color:#333;}
+    .enroll-textarea::placeholder{color:#333;}
+    .enroll-btn{margin-top:12px;background:#1a1a1a;color:#888;border:1px solid #2a2a2a;padding:10px 22px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;transition:all 0.15s;}
+    .enroll-btn.active{background:#4ade80;color:#0a0a0a;border-color:#4ade80;}
+    .enroll-btn:hover{opacity:0.85;}
+    .enrolled-badge{display:inline-flex;align-items:center;gap:6px;background:#0d1f0d;border:1px solid #1a3a1a;color:#4ade80;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:500;}
+    .verify-section{background:#0f0f0f;border:1px solid #1f1f1f;border-radius:16px;padding:28px;margin:16px 0;}
+    .live-signals{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:16px 0;}
+    .sig-card{background:#0a0a0a;border:1px solid #1a1a1a;border-radius:8px;padding:12px;text-align:center;}
+    .sig-val{font-size:14px;font-weight:500;font-family:'JetBrains Mono',monospace;color:white;}
+    .sig-lbl{font-size:10px;color:#444;margin-top:4px;}
+    .verify-textarea{width:100%;background:#0a0a0a;border:1px solid #222;border-radius:8px;color:white;padding:14px;font-size:14px;font-family:'Inter',sans-serif;resize:vertical;min-height:120px;outline:none;line-height:1.7;margin:12px 0;}
+    .verify-textarea:focus{border-color:#333;}
+    .verify-textarea::placeholder{color:#333;}
+    .verify-btn{background:white;color:black;border:none;padding:12px 28px;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;transition:opacity 0.15s;}
+    .verify-btn:hover{opacity:0.85;}
+    .verify-btn:disabled{opacity:0.3;cursor:default;}
+    .result{margin-top:20px;border-radius:12px;padding:24px;display:none;}
+    .result.human{background:#0d1f0d;border:1px solid #1a3a1a;}
+    .result.bot{background:#1f0d0d;border:1px solid #3a1a1a;}
+    .verdict{font-size:20px;font-weight:600;margin-bottom:20px;}
+    .result.human .verdict{color:#4ade80;}
+    .result.bot .verdict{color:#f87171;}
+    .breakdown{display:grid;grid-template-columns:1fr;gap:10px;margin-bottom:16px;}
+    .breakdown-row{background:rgba(255,255,255,0.03);border-radius:8px;padding:12px 16px;}
+    .breakdown-label{display:flex;justify-content:space-between;font-size:13px;margin-bottom:8px;}
+    .breakdown-name{color:#ccc;}
+    .breakdown-score{font-weight:500;font-family:'JetBrains Mono',monospace;}
+    .breakdown-bar{height:4px;background:#1a1a1a;border-radius:2px;overflow:hidden;}
+    .breakdown-fill{height:100%;border-radius:2px;transition:width 0.8s ease;}
+    .cert-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;}
+    .cert-row{background:rgba(255,255,255,0.03);border-radius:6px;padding:10px 14px;}
+    .cert-row .k{font-size:10px;color:#555;margin-bottom:3px;letter-spacing:0.5px;}
+    .cert-row .v{font-size:12px;color:#aaa;font-family:'JetBrains Mono',monospace;word-break:break-all;}
+    .debug-panel{background:#0a0a0a;border:1px solid #1a1a1a;border-radius:10px;padding:16px;margin-top:16px;}
+    .debug-title{font-size:10px;letter-spacing:3px;color:#444;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;}
+    .debug-toggle{cursor:pointer;color:#555;font-size:11px;}
+    .debug-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+    .debug-row{display:flex;justify-content:space-between;font-size:11px;padding:4px 0;border-bottom:1px solid #111;}
+    .debug-row .dk{color:#444;}
+    .debug-row .dv{color:#666;font-family:'JetBrains Mono',monospace;}
+    .status{font-size:12px;color:#555;margin-top:10px;min-height:16px;}
+    .footer{border-top:1px solid #1a1a1a;padding:24px;text-align:center;color:#333;font-size:12px;margin-top:60px;}
+    @media(max-width:600px){
+      .live-signals{grid-template-columns:repeat(2,1fr);}
+      .cert-grid{grid-template-columns:1fr;}
+      .debug-grid{grid-template-columns:1fr;}
+      .hero h1{font-size:28px;}
     }
-    .bot-btn:hover { opacity: 0.85; }
-    .signals { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:20px; }
-    .signal-card { background:#0f0f0f; border:1px solid #1a1a1a; border-radius:8px; padding:12px; text-align:center; }
-    .signal-card .val { font-size:15px; font-weight:500; font-family:monospace; color:white; }
-    .signal-card .lbl { font-size:10px; color:#555; margin-top:4px; }
-    .result { margin-top:24px; border-radius:12px; padding:24px; display:none; }
-    .result.human { background:#0d1f0d; border:1px solid #1a3a1a; }
-    .result.bot { background:#1f0d0d; border:1px solid #3a1a1a; }
-    .result .verdict { font-size:22px; font-weight:600; margin-bottom:16px; }
-    .result.human .verdict { color:#4ade80; }
-    .result.bot .verdict { color:#f87171; }
-    .cert-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
-    .cert-row { background:rgba(255,255,255,0.03); border-radius:6px; padding:10px 14px; }
-    .cert-row .k { font-size:11px; color:#555; margin-bottom:3px; }
-    .cert-row .v { font-size:12px; color:#ccc; font-family:monospace; word-break:break-all; }
-    .meter-wrap { margin:20px 0 8px; }
-    .meter-label { display:flex; justify-content:space-between; font-size:12px; color:#555; margin-bottom:8px; }
-    .meter { height:6px; background:#1a1a1a; border-radius:3px; overflow:hidden; }
-    .meter-fill { height:100%; border-radius:3px; transition:width 0.8s ease; }
-    .status { font-size:12px; color:#555; margin-top:12px; text-align:center; min-height:18px; }
-    .footer { border-top:1px solid #1a1a1a; padding:24px 0; text-align:center; color:#333; font-size:12px; margin-top:60px; }
-    @media(max-width:600px) { .signals { grid-template-columns:repeat(2,1fr); } .cert-grid { grid-template-columns:1fr; } .hero h1 { font-size:28px; } }
   </style>
 </head>
 <body>
-
 <nav>
-  <div class="inner">
-    <div class="logo">Verity</div>
-    <div class="badge">Meta PyTorch Hackathon 2026</div>
-  </div>
+  <div class="logo">Verity</div>
+  <div class="nav-badge">Meta PyTorch Hackathon 2026</div>
 </nav>
-
 <div class="container">
   <div class="hero">
     <h1>Proof that it's human.</h1>
-    <p>Type anything below. Verity's PyTorch model analyzes your behavioral signals in real time and issues a cryptographic certificate proving human presence.</p>
+    <p>Real behavioral biometrics — keystroke dynamics, mouse kinematics, session patterns. Not detected after the fact. Proven at creation.</p>
   </div>
-
-  <div class="demo-area">
-    <h2>Live verification demo</h2>
-    <p>Start typing — signals are captured automatically as you write.</p>
-
-    <textarea id="inputText" placeholder="Write anything here... a review, a message, a thought. The longer you write, the more accurate the verification becomes."></textarea>
-
-    <div class="signals" id="signals">
-      <div class="signal-card"><div class="val" id="sig-keystroke">—</div><div class="lbl">Keystroke gap ms</div></div>
-      <div class="signal-card"><div class="val" id="sig-duration">0s</div><div class="lbl">Session duration</div></div>
-      <div class="signal-card"><div class="val" id="sig-edits">0</div><div class="lbl">Edit events</div></div>
-      <div class="signal-card"><div class="val" id="sig-entropy">—</div><div class="lbl">Cursor entropy</div></div>
+  <!-- ENROLLMENT SECTION -->
+  <div class="enroll-section" id="enrollSection">
+    <div class="section-label">STEP 1 — ENROLLMENT</div>
+    <div class="enroll-header">
+      <div class="enroll-title">Build your behavioral baseline</div>
+      <div class="enroll-status" id="enrollStatus">Not started</div>
     </div>
-
-    <button class="verify-btn" id="verifyBtn" onclick="verify()" disabled>
-      Verify human presence
-    </button>
-    <button class="bot-btn" id="botBtn" onclick="simulateBot()">
-      Simulate bot attack
-    </button>
-    <div class="status" id="status">Start typing to enable verification</div>
-
-    <div class="result" id="result">
-      <div class="verdict" id="verdict"></div>
-      <div class="meter-wrap">
-        <div class="meter-label"><span>Bot</span><span id="score-label">0%</span><span>Human</span></div>
-        <div class="meter"><div class="meter-fill" id="meter-fill"></div></div>
+    <div class="progress-bar">
+      <div class="progress-fill" id="enrollProgress"></div>
+    </div>
+    <p style="font-size:13px;color:#555;margin-bottom:14px;line-height:1.7;">
+      Type naturally for 30-45 seconds. Verity learns your unique keystroke rhythm, 
+      dwell times, flight times, and mouse movement patterns. 
+      This builds your personal behavioral baseline.
+    </p>
+    <textarea class="enroll-textarea" id="enrollText" 
+      placeholder="Type anything naturally here — a story, thoughts, anything. The more you type the better your baseline..."></textarea>
+    <div style="display:flex;align-items:center;gap:12px;margin-top:12px;">
+      <button class="enroll-btn" id="enrollBtn" onclick="startEnrollment()">
+        Start profiling
+      </button>
+      <div id="enrolledBadge" style="display:none;">
+        <div class="enrolled-badge">Baseline established</div>
       </div>
-      <div class="cert-grid" id="cert-grid"></div>
     </div>
+  </div>
+  <!-- VERIFICATION SECTION -->
+  <div class="verify-section">
+    <div class="section-label">STEP 2 — VERIFICATION</div>
+    <div style="font-size:15px;font-weight:500;margin-bottom:6px;">
+      Live behavioral verification
+    </div>
+    <p style="font-size:13px;color:#555;margin-bottom:16px;line-height:1.7;">
+      Type your content below. Verity captures behavioral signals in real time 
+      and scores your human probability across multiple dimensions.
+    </p>
+<div class="live-signals">
+  <div class="sig-card">
+    <div class="sig-val" id="live-dwell">—</div>
+    <div class="sig-lbl">Dwell time ms</div>
+  </div>
+  <div class="sig-card">
+    <div class="sig-val" id="live-flight">—</div>
+    <div class="sig-lbl">Flight time ms</div>
+  </div>
+  <div class="sig-card">
+    <div class="sig-val" id="live-speed">—</div>
+    <div class="sig-lbl">Mouse speed px/s</div>
+  </div>
+  <div class="sig-card">
+    <div class="sig-val" id="live-keys">0</div>
+    <div class="sig-lbl">Total keystrokes</div>
   </div>
 </div>
 
-<div class="footer">
-  <div class="container">Verity — Built for Meta PyTorch Hackathon 2026 · Proof that it's human</div>
+<textarea class="verify-textarea" id="verifyText"
+  placeholder="Write your review, application, document, or any content to verify..."></textarea>
+
+<button class="verify-btn" id="verifyBtn" onclick="runVerification()">
+  Verify human presence
+</button>
+<div class="status" id="verifyStatus"></div>
+
+<div class="result" id="result">
+  <div class="verdict" id="verdict"></div>
+
+  <div class="breakdown" id="breakdown"></div>
+
+  <div class="cert-grid" id="certGrid"></div>
+
+  <div class="debug-panel" id="debugPanel" style="display:none;">
+    <div class="debug-title">
+      <span>RAW BEHAVIORAL SIGNALS</span>
+      <span class="debug-toggle" onclick="toggleDebug()">hide</span>
+    </div>
+    <div class="debug-grid" id="debugGrid"></div>
+  </div>
+  <div style="margin-top:12px;">
+    <span class="debug-toggle" onclick="toggleDebug()" 
+      id="showDebugBtn" style="font-size:12px;color:#444;cursor:pointer;">
+      Show raw signals
+    </span>
+  </div>
 </div>
-
+  </div>
+</div>
+<div class="footer">
+  Verity — Built for Meta PyTorch Hackathon 2026 · Proof that it's human
+</div>
 <script>
-  const API = "";
+  let enrolling = false;
+  let enrolled = false;
+  let enrollTimer = null;
+  let liveUpdateTimer = null;
 
-  let keystrokes = [];
-  let lastKeyTime = null;
-  let sessionStart = Date.now();
-  let editCount = 0;
-  let mousePositions = [];
-  let isTyping = false;
-  let isPastedContent = false;
-
-  const textarea = document.getElementById("inputText");
-
-  textarea.addEventListener("keydown", (e) => {
-    const now = Date.now();
-    if (lastKeyTime !== null) {
-      const gap = now - lastKeyTime;
-      keystrokes.push(gap);
-    }
-    lastKeyTime = now;
-    isPastedContent = false; // Reset paste flag on actual typing
-
-    if (e.key === "Backspace" || e.key === "Delete") {
-      editCount++;
-      document.getElementById("sig-edits").textContent = editCount;
-    }
-
-    if (keystrokes.length > 0) {
-      const avg = keystrokes.reduce((a,b)=>a+b,0) / keystrokes.length;
-      document.getElementById("sig-keystroke").textContent = Math.round(avg) + "ms";
-    }
-
-    const elapsed = Math.round((Date.now() - sessionStart) / 1000);
-    document.getElementById("sig-duration").textContent = elapsed + "s";
-
-    if (!isTyping && textarea.value.length > 10) {
-      isTyping = true;
-      document.getElementById("verifyBtn").disabled = false;
-      document.getElementById("status").textContent = "Ready to verify";
+  Verity.init({
+    onEnrollmentComplete: function(baseline) {
+      enrolled = true;
+      enrolling = false;
+      clearInterval(enrollTimer);
+      document.getElementById('enrollProgress').style.width = '100%';
+      document.getElementById('enrollStatus').textContent = 'Complete';
+      document.getElementById('enrollBtn').textContent = 'Re-profile';
+      document.getElementById('enrollBtn').classList.remove('active');
+      document.getElementById('enrolledBadge').style.display = 'block';
+      console.log('Baseline:', baseline);
     }
   });
 
-  textarea.addEventListener("paste", (e) => {
-    setTimeout(() => {
-      isPastedContent = true;
-      // Generate bot-like signals for pasted content
-      const pastedLength = e.clipboardData.getData('text').length;
-      
-      // Simulate bot-like keystrokes for the pasted content
-      keystrokes = [];
-      for (let i = 0; i < Math.min(pastedLength, 50); i++) {
-        keystrokes.push(5 + Math.random() * 10); // Very fast, consistent typing
-      }
-      
-      editCount = 0; // No edits for pasted content
-      
-      // Override other signals to be bot-like
-      sessionStart = Date.now() - (pastedLength * 10); // Very short session
-      mousePositions = []; // Minimal mouse movement
-      
-      // Update display
-      const avg = keystrokes.reduce((a,b)=>a+b,0) / keystrokes.length;
-      document.getElementById("sig-keystroke").textContent = Math.round(avg) + "ms";
-      document.getElementById("sig-edits").textContent = editCount;
-      document.getElementById("sig-entropy").textContent = "0.02";
-      
-      if (!isTyping && textarea.value.length > 10) {
-        isTyping = true;
-        document.getElementById("verifyBtn").disabled = false;
-        document.getElementById("status").textContent = "Pasted content detected";
-      }
-    }, 10);
-  });
+  function startEnrollment() {
+    if (enrolling) return;
+    enrolling = true;
+    enrolled = false;
+    Verity.startEnrollment();
 
-  document.addEventListener("mousemove", (e) => {
-    mousePositions.push({ x: e.clientX, y: e.clientY, t: Date.now() });
-    if (mousePositions.length > 50) mousePositions.shift();
-    const entropy = calcEntropy();
-    document.getElementById("sig-entropy").textContent = entropy.toFixed(2);
-  });
+    document.getElementById('enrollBtn').textContent = 'Profiling...';
+    document.getElementById('enrollBtn').classList.add('active');
+    document.getElementById('enrolledBadge').style.display = 'none';
+    document.getElementById('enrollStatus').textContent = 'Recording...';
+    document.getElementById('enrollText').focus();
 
-  function calcEntropy() {
-    if (mousePositions.length < 2) return 0;
-    let totalDist = 0;
-    for (let i = 1; i < mousePositions.length; i++) {
-      const dx = mousePositions[i].x - mousePositions[i-1].x;
-      const dy = mousePositions[i].y - mousePositions[i-1].y;
-      totalDist += Math.sqrt(dx*dx + dy*dy);
+    enrollTimer = setInterval(() => {
+      const progress = Verity.getEnrollmentProgress();
+      document.getElementById('enrollProgress').style.width = progress + '%';
+      document.getElementById('enrollStatus').textContent = 
+        progress < 100 ? 'Recording... ' + progress + '%' : 'Processing...';
+      if (progress >= 100) clearInterval(enrollTimer);
+    }, 500);
+  }
+
+  // Live signal updates
+  liveUpdateTimer = setInterval(() => {
+    const signals = Verity.collectSignals();
+    const kb = signals.keyboard;
+    const ms = signals.mouse;
+
+    if (kb.dwell_mean > 0) {
+      document.getElementById('live-dwell').textContent = 
+        Math.round(kb.dwell_mean) + 'ms';
     }
-    return Math.min(totalDist / (mousePositions.length * 100), 1);
-  }
-
-  function calcVariance(arr) {
-    if (arr.length < 2) return 0;
-    const mean = arr.reduce((a,b)=>a+b,0) / arr.length;
-    const variance = arr.reduce((a,b)=>a+(b-mean)**2,0) / arr.length;
-    return Math.sqrt(variance);
-  }
-
-  async function verify() {
-    const content = document.getElementById("inputText").value;
-    if (!content || content.length < 10) return;
-
-    document.getElementById("status").textContent = "Analyzing behavioral signals...";
-    document.getElementById("verifyBtn").disabled = true;
-
-    const avgGap = keystrokes.length > 0
-      ? keystrokes.reduce((a,b)=>a+b,0) / keystrokes.length : 150;
-    const sessionDuration = (Date.now() - sessionStart) / 1000;
-    const entropy = calcEntropy();
-    const typingVariance = calcVariance(keystrokes);
-    const wordCount = content.trim().split(/\s+/).length;
-    const pauseRatio = keystrokes.filter(g => g > 500).length / Math.max(keystrokes.length, 1);
-
-    const payload = {
-      content,
-      keystroke_gap_ms: avgGap,
-      session_duration_s: sessionDuration,
-      edit_count: editCount,
-      cursor_entropy: entropy,
-      content_length: wordCount,
-      device_score: isPastedContent ? 0.1 : 0.85,  // Low device score for pasted content
-      typing_variance: typingVariance,
-      pause_ratio: pauseRatio
-    };
-
-    try {
-      const res = await fetch("/verify", {
-        method: "POST",
-        mode: "cors",
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json"
-        },
-        body: JSON.stringify(payload)
-      });
-
-      if (!res.ok) {
-        throw new Error("API error: " + res.status);
-      }
-
-      const cert = await res.json();
-      showResult(cert);
-
-    } catch (err) {
-      console.error("Fetch error:", err);
-      document.getElementById("status").textContent = "Error: " + err.message;
-      document.getElementById("verifyBtn").disabled = false;
+    if (kb.flight_mean > 0) {
+      document.getElementById('live-flight').textContent = 
+        Math.round(kb.flight_mean) + 'ms';
     }
-  }
+    if (ms.speed_mean > 0) {
+      document.getElementById('live-speed').textContent = 
+        Math.round(ms.speed_mean);
+    }
+    document.getElementById('live-keys').textContent = kb.total_keys || 0;
+  }, 800);
 
-  async function simulateBot() {
-    const content = document.getElementById("inputText").value;
-    if (!content || content.length < 10) {
-      document.getElementById("status").textContent = 
-        "Please type some content first to simulate bot transformation.";
+  async function runVerification() {
+    const content = document.getElementById('verifyText').value;
+    if (!content || content.trim().length < 10) {
+      document.getElementById('verifyStatus').textContent = 
+        'Please type at least a few sentences first.';
       return;
     }
 
-    document.getElementById("status").textContent = 
-      "Simulating bot transformation of your content...";
-    document.getElementById("botBtn").disabled = true;
-
-    // Bot-like transformations of the user's content
-    const botContent = content
-      .replace(/\b(I|me|my|mine)\b/gi, "the system")
-      .replace(/\b(human|person|people)\b/gi, "user")
-      .replace(/\b(think|feel|believe)\b/gi, "process")
-      .replace(/\b(natural|organic)\b/gi, "algorithmic")
-      + " [AI-generated augmentation]";
-
-    // Generate bot-like signals based on content characteristics
-    const wordCount = content.trim().split(/\s+/).length;
-    const charCount = content.length;
-    
-    const payload = {
-      content: botContent,
-      keystroke_gap_ms: 3 + Math.random() * 2,  // Very consistent, fast typing
-      session_duration_s: Math.min(charCount * 0.01, 2.0),  // Unrealistically fast
-      edit_count: 0,  // No edits - perfect first draft
-      cursor_entropy: 0.01 + Math.random() * 0.02,  // Minimal mouse movement
-      content_length: wordCount,
-      device_score: 0.05 + Math.random() * 0.1,  // Low device score
-      typing_variance: 0.001 + Math.random() * 0.003,  // Very consistent typing
-      pause_ratio: 0.001 + Math.random() * 0.002  // Almost no natural pauses
-    };
+    document.getElementById('verifyBtn').disabled = true;
+    document.getElementById('verifyStatus').textContent = 
+      'Analyzing behavioral signals...';
+    document.getElementById('result').style.display = 'none';
 
     try {
-      const res = await fetch("/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
+      const signals = Verity.collectSignals();
+      signals.content = content;
+      signals.content_length = content.trim().split(/\s+/).length;
+
+      const res = await fetch('/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(signals)
       });
+
       const cert = await res.json();
       showResult(cert);
+      document.getElementById('verifyStatus').textContent = 
+        cert.verified ? 'Certificate issued' : 'Submission rejected';
+
     } catch (err) {
-      document.getElementById("status").textContent = 
-        "Error: " + err.message;
+      document.getElementById('verifyStatus').textContent = 
+        'Error: ' + err.message;
     }
 
-    document.getElementById("botBtn").disabled = false;
+    document.getElementById('verifyBtn').disabled = false;
   }
 
   function showResult(cert) {
-    const resultEl = document.getElementById("result");
     const isHuman = cert.verified;
     const score = cert.human_score;
-
-    resultEl.className = "result " + (isHuman ? "human" : "bot");
-    resultEl.style.display = "block";
-
-    document.getElementById("verdict").textContent =
-      isHuman ? "Verified — Human presence confirmed" : "Rejected — Bot behavior detected";
-
     const pct = Math.round(score * 100);
-    document.getElementById("score-label").textContent = pct + "% human";
-    const fill = document.getElementById("meter-fill");
-    fill.style.width = pct + "%";
-    fill.style.background = isHuman ? "#4ade80" : "#f87171";
+    const breakdown = cert.breakdown || {};
+    const raw = cert.raw || {};
 
-    const grid = document.getElementById("cert-grid");
-    grid.innerHTML = `
-      <div class="cert-row"><div class="k">Certificate ID</div><div class="v">${cert.certificate_id}</div></div>
-      <div class="cert-row"><div class="k">Human score</div><div class="v">${(score * 100).toFixed(1)}%</div></div>
-      <div class="cert-row"><div class="k">Content hash</div><div class="v">${cert.content_hash}</div></div>
-      <div class="cert-row"><div class="k">Timestamp</div><div class="v">${cert.timestamp}</div></div>
-    `;
+    const resultEl = document.getElementById('result');
+    resultEl.className = 'result ' + (isHuman ? 'human' : 'bot');
+    resultEl.style.display = 'block';
 
-    document.getElementById("status").textContent = 
-      isHuman ? "Certificate issued successfully" : "Submission blocked";
-    document.getElementById("verifyBtn").disabled = false;
+    document.getElementById('verdict').textContent = isHuman
+      ? 'Verified — Human presence confirmed'
+      : 'Rejected — Bot behavior detected';
+
+    // Breakdown bars
+    const dims = [
+      { key: 'keyboard_rhythm', label: 'Keyboard rhythm' },
+      { key: 'mouse_naturalness', label: 'Mouse naturalness' },
+      { key: 'session_behavior', label: 'Session behavior' },
+      { key: 'baseline_match', label: 'Baseline match' }
+    ];
+
+    let bdHtml = '';
+    dims.forEach(d => {
+      const val = breakdown[d.key];
+      if (val === null || val === undefined) return;
+      const pctVal = Math.round(val * 100);
+      const color = val >= 0.6 ? '#4ade80' : val >= 0.4 ? '#facc15' : '#f87171';
+      bdHtml += `
+        <div class="breakdown-row">
+          <div class="breakdown-label">
+            <span class="breakdown-name">${d.label}</span>
+            <span class="breakdown-score" style="color:${color}">${pctVal}%</span>
+          </div>
+          <div class="breakdown-bar">
+            <div class="breakdown-fill" 
+              style="width:${pctVal}%;background:${color}"></div>
+          </div>
+        </div>`;
+    });
+
+    // Overall score bar
+    const overallColor = isHuman ? '#4ade80' : '#f87171';
+    bdHtml = `
+      <div class="breakdown-row">
+        <div class="breakdown-label">
+          <span class="breakdown-name" style="font-weight:500">
+            Overall human probability
+          </span>
+          <span class="breakdown-score" style="color:${overallColor};font-size:15px">
+            ${pct}%
+          </span>
+        </div>
+        <div class="breakdown-bar" style="height:6px">
+          <div class="breakdown-fill" 
+            style="width:${pct}%;background:${overallColor}"></div>
+        </div>
+      </div>` + bdHtml;
+
+    document.getElementById('breakdown').innerHTML = bdHtml;
+
+    // Certificate details
+    document.getElementById('certGrid').innerHTML = `
+      <div class="cert-row">
+        <div class="k">CERTIFICATE ID</div>
+        <div class="v">${cert.certificate_id}</div>
+      </div>
+      <div class="cert-row">
+        <div class="k">CONTENT HASH</div>
+        <div class="v">${cert.content_hash}</div>
+      </div>
+      <div class="cert-row">
+        <div class="k">TIMESTAMP</div>
+        <div class="v">${new Date(cert.timestamp).toLocaleString()}</div>
+      </div>
+      <div class="cert-row">
+        <div class="k">VERIFY URL</div>
+        <div class="v" style="color:#4ade80;cursor:pointer" 
+          onclick="window.open('/verify/${cert.certificate_id}','_blank')">
+          /verify/${cert.certificate_id}
+        </div>
+      </div>`;
+
+    // Debug panel
+    let dbHtml = '';
+    const debugKeys = [
+      ['dwell_mean_ms', 'Dwell mean'],
+      ['dwell_std_ms', 'Dwell std'],
+      ['flight_mean_ms', 'Flight mean'],
+      ['flight_std_ms', 'Flight std'],
+      ['backspace_ratio', 'Backspace ratio'],
+      ['total_keys', 'Total keys'],
+      ['mouse_speed_mean', 'Mouse speed px/s'],
+      ['mouse_speed_std', 'Mouse speed std'],
+      ['mouse_jerk_mean', 'Mouse jerk'],
+      ['mouse_curvature_mean', 'Mouse curvature'],
+      ['mouse_pauses', 'Natural pauses'],
+      ['session_duration_s', 'Session duration s'],
+      ['words_per_second', 'Words per second']
+    ];
+    debugKeys.forEach(([k, label]) => {
+      if (raw[k] !== undefined) {
+        dbHtml += `
+          <div class="debug-row">
+            <span class="dk">${label}</span>
+            <span class="dv">${raw[k]}</span>
+          </div>`;
+      }
+    });
+    document.getElementById('debugGrid').innerHTML = dbHtml;
   }
+
+  function toggleDebug() {
+    const panel = document.getElementById('debugPanel');
+    const btn = document.getElementById('showDebugBtn');
+    if (panel.style.display === 'none') {
+      panel.style.display = 'block';
+      btn.textContent = '';
+    } else {
+      panel.style.display = 'none';
+      btn.textContent = 'Show raw signals';
+    }
+  }
+
+  document.getElementById('verifyText').addEventListener('input', () => {
+    const btn = document.getElementById('verifyBtn');
+    btn.disabled = document.getElementById('verifyText').value.length < 10;
+  });
 </script>
 </body>
 </html>

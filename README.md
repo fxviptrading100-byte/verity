@@ -1,4 +1,4 @@
-# Verity — Human Verification RL Environment
+# Verity â€” Human Verification RL Environment
 
 > "In a world where AI can fake everything, proof of human presence becomes the most valuable primitive on the internet."
 
@@ -6,31 +6,36 @@ Built for Meta PyTorch Hackathon 2026.
 
 ---
 
+## Live Demo
+https://YOUR-RAILWAY-URL
+
+---
+
 ## What is Verity?
 
 Verity is a reinforcement learning environment where an agent learns to distinguish real human behavioral signals from AI-generated bot behavior.
 
-It is not a toy game. It is real-world AI safety infrastructure — a verification layer that proves a human was present at the moment of content creation.
+It is not a toy game. It is real-world AI safety infrastructure â€” a verification layer that proves a human was present at the moment of content creation.
 
 ---
 
 ## The Problem
 
-AI can now generate perfect fake reviews, job applications, legal documents, and research papers in milliseconds. Existing detectors guess after the fact and fail constantly. Verity solves this at the source — by certifying human presence at creation, not detecting fakeness afterward.
+AI can now generate perfect fake reviews, job applications, legal documents, and research papers in milliseconds. Existing detectors guess after the fact and fail constantly. Verity solves this at the source â€” by certifying human presence at creation, not detecting fakeness afterward.
 
 ---
 
 ## RL Environment
 
 State space: 8-dimensional behavioral signal vector
-- keystroke_gap_ms — average gap between keystrokes
-- session_duration_s — total session length
-- edit_count — number of edits and deletions
-- cursor_entropy — randomness of cursor movement
-- content_length — word count of submission
-- device_score — hardware attestation score
-- typing_variance — standard deviation of keystroke timing
-- pause_ratio — ratio of natural pauses in typing
+- keystroke_gap_ms â€” average gap between keystrokes
+- session_duration_s â€” total session length
+- edit_count â€” number of edits and deletions
+- cursor_entropy â€” randomness of cursor movement
+- content_length â€” word count of submission
+- device_score â€” hardware attestation score
+- typing_variance â€” standard deviation of keystroke timing
+- pause_ratio â€” ratio of natural pauses in typing
 
 Action space: Binary
 - 0 = Bot (reject submission)
@@ -96,35 +101,35 @@ https://YOUR-RAILWAY-URL
 
 verity/
 +-- env/
-¦   +-- verity_env.py        RL environment — state, action, reward
-¦   +-- data_generator.py    Synthetic behavioral dataset generator
+Â¦   +-- verity_env.py        RL environment â€” state, action, reward
+Â¦   +-- data_generator.py    Synthetic behavioral dataset generator
 +-- model/
-¦   +-- model.py             PyTorch neural network architecture
-¦   +-- train.py             Training loop
-¦   +-- evaluate.py          Grader — accuracy, F1, Verity score
+Â¦   +-- model.py             PyTorch neural network architecture
+Â¦   +-- train.py             Training loop
+Â¦   +-- evaluate.py          Grader â€” accuracy, F1, Verity score
 +-- api/
-¦   +-- app.py               Flask API — POST /verify, GET /certificate/:id
+Â¦   +-- app.py               Flask API â€” POST /verify, GET /certificate/:id
 +-- frontend/
-    +-- index.html           Live demo — real-time human verification
+    +-- index.html           Live demo â€” real-time human verification
 
 ---
 
 ## Live Demo
 
-Start the Flask server and open https://YOUR-RAILWAY-URL
+Start the Flask server and open https://verity-production-ba3e.up.railway.app
 
 Type anything naturally. Verity captures your behavioral signals silently,
 runs them through the PyTorch model, and issues a tamper-proof certificate
-proving human presence — in real time.
+proving human presence â€” in real time.
 
 ---
 
 ## Why This Matters
 
 By 2028 the majority of internet interactions will be machine-generated.
-Every system built assuming a human is on the other end — hiring, legal,
-financial, academic — will need a trust layer underneath it.
+Every system built assuming a human is on the other end â€” hiring, legal,
+financial, academic â€” will need a trust layer underneath it.
 
 Verity is that layer.
 
-Built by Avadhut Parbhane — Solo founder, Sambhajinagar, Maharashtra.
+Built by Avadhut Parbhane â€” Solo founder, Sambhajinagar, Maharashtra.
