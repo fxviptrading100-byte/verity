@@ -153,51 +153,100 @@ def health():
 @app.route('/verify', methods=['POST'])
 def verify():
     import json
-    data = request.json
-    scores = score_signals(data)
+    try:
+        data = request.json
+        if not data:
+            return jsonify({
+                'error': 'No data provided',
+                'human_score': 0.0,
+                'verdict': 'BOT DETECTED',
+                'verified': False
+            }), 400
+        
+        # Ensure required fields exist with defaults
+        if 'keyboard' not in data:
+            data['keyboard'] = {}
+        if 'mouse' not in data:
+            data['mouse'] = {}
+        if 'session' not in data:
+            data['session'] = {}
+        
+        # Add device_score if missing
+        if 'device_score' not in data:
+            data['device_score'] = 0.5
+        
+        # Add content_length if missing
+        if 'content_length' not in data:
+            data['content_length'] = len(data.get('content', ''))
+        
+        scores = score_signals(data)
+        
+        # Validate scores
+        if not scores or 'human_score' not in scores:
+            return jsonify({
+                'error': 'Scoring failed',
+                'human_score': 0.0,
+                'verdict': 'BOT DETECTED',
+                'verified': False
+            }), 500
+        
+        # Ensure human_score is a valid number
+        human_score = scores.get('human_score', 0)
+        if human_score is None or (isinstance(human_score, float) and (human_score != human_score)):  # NaN check
+            human_score = 0.0
+        
+        content = data.get('content', '')
+        content_hash = hash_content(content) if content else 'no_content'
+        cert_id = generate_cert_id()
+        timestamp = datetime.datetime.utcnow()
+        raw = scores.get('raw', {})
 
-    content = data.get('content', '')
-    content_hash = hash_content(content) if content else 'no_content'
-    cert_id = generate_cert_id()
-    timestamp = datetime.datetime.utcnow()
-    raw = scores.get('raw', {})
-
-    cert_data = {
-        'id': cert_id,
-        'content_hash': content_hash,
-        'human_score': float(scores['human_probability']),
-        'verified': bool(scores['verified']),
-        'timestamp': timestamp,
-        'keyboard_rhythm': float(scores.get('keyboard_rhythm', 0)),
-        'mouse_naturalness': float(scores.get('mouse_naturalness', 0)),
-        'session_behavior': float(scores.get('session_behavior', 0)),
-        'baseline_match': float(scores['baseline_match']) if scores.get('baseline_match') is not None else None,
-        'dwell_mean': float(raw.get('dwell_mean_ms', 0)),
-        'flight_mean': float(raw.get('flight_mean_ms', 0)),
-        'backspace_ratio': float(raw.get('backspace_ratio', 0)),
-        'mouse_speed_mean': float(raw.get('mouse_speed_mean', 0)),
-        'mouse_jerk_mean': float(raw.get('mouse_jerk_mean', 0)),
-        'session_duration': float(raw.get('session_duration_s', 0)),
-        'total_keys': int(raw.get('total_keys', 0)),
-        'raw_signals': json.dumps(raw)
-    }
-
-    save_certificate(cert_data)
-
-    return jsonify({
-        'certificate_id': cert_id,
-        'content_hash': content_hash,
-        'human_score': float(scores['human_probability']),
-        'verified': bool(scores['verified']),
-        'timestamp': timestamp.isoformat() + 'Z',
-        'breakdown': {
+        cert_data = {
+            'id': cert_id,
+            'content_hash': content_hash,
+            'human_score': float(human_score),
+            'verified': bool(scores.get('verified', False)),
+            'timestamp': timestamp,
             'keyboard_rhythm': float(scores.get('keyboard_rhythm', 0)),
             'mouse_naturalness': float(scores.get('mouse_naturalness', 0)),
             'session_behavior': float(scores.get('session_behavior', 0)),
-            'baseline_match': float(scores['baseline_match']) if scores.get('baseline_match') is not None else None
-        },
-        'raw': raw
-    })
+            'baseline_match': float(scores['baseline_match']) if scores.get('baseline_match') is not None else None,
+            'dwell_mean': float(raw.get('dwell_mean_ms', 0)),
+            'flight_mean': float(raw.get('flight_mean_ms', 0)),
+            'backspace_ratio': float(raw.get('backspace_ratio', 0)),
+            'mouse_speed_mean': float(raw.get('mouse_speed_mean', 0)),
+            'mouse_jerk_mean': float(raw.get('mouse_jerk_mean', 0)),
+            'session_duration': float(raw.get('session_duration_s', 0)),
+            'total_keys': int(raw.get('total_keys', 0)),
+            'raw_signals': json.dumps(raw)
+        }
+
+        save_certificate(cert_data)
+
+        return jsonify({
+            'certificate_id': cert_id,
+            'content_hash': content_hash,
+            'human_score': float(human_score),
+            'verified': bool(scores.get('verified', False)),
+            'verdict': 'HUMAN VERIFIED' if scores.get('verified', False) else 'BOT DETECTED',
+            'timestamp': timestamp.isoformat() + 'Z',
+            'breakdown': {
+                'keyboard_rhythm': float(scores.get('keyboard_rhythm', 0)),
+                'mouse_naturalness': float(scores.get('mouse_naturalness', 0)),
+                'session_behavior': float(scores.get('session_behavior', 0)),
+                'baseline_match': float(scores['baseline_match']) if scores.get('baseline_match') is not None else None
+            },
+            'raw': raw
+        })
+        
+    except Exception as e:
+        print(f"Error in /verify: {e}")
+        return jsonify({
+            'error': f'Verification failed: {str(e)}',
+            'human_score': 0.0,
+            'verdict': 'BOT DETECTED',
+            'verified': False
+        }), 500
 
 @app.route('/certificate/<cert_id>', methods=['GET'])
 @app.route('/api/certificate/<cert_id>', methods=['GET'])
