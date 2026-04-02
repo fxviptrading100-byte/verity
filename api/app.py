@@ -152,121 +152,66 @@ def health():
 
 @app.route('/verify', methods=['POST'])
 def verify():
-    import json
     try:
-        # Get and validate input
-        data = request.json
-        if not data:
-            return jsonify({
-                'error': 'No data provided',
-                'human_score': 0.0,
-                'verdict': 'BOT DETECTED',
-                'verified': False,
-                'certificate_id': None,
-                'timestamp': None
-            }), 400
+        data = request.get_json(silent=True) or {}
         
-        # Ensure required fields exist with defaults
-        if 'keyboard' not in data:
-            data['keyboard'] = {}
-        if 'mouse' not in data:
-            data['mouse'] = {}
-        if 'session' not in data:
-            data['session'] = {}
-        if 'device_score' not in data:
-            data['device_score'] = 0.5
-        if 'content_length' not in data:
-            data['content_length'] = len(data.get('content', ''))
+        # Extract data with safe defaults
+        kb = data.get('keyboard', {})
+        ms = data.get('mouse', {})
+        sess = data.get('session', {})
         
-        # Call scorer with error handling
+        # Call real scorer
         try:
-            scores = score_signals(data)
+            scores = score_signals({
+                'keyboard': kb,
+                'mouse': ms,
+                'session': sess,
+                'content': data.get('content', ''),
+                'device_score': data.get('device_score', 0.5),
+                'content_length': len(data.get('content', ''))
+            })
         except Exception as e:
             print(f"Scorer error: {e}")
-            scores = {
-                'human_score': 0.0,
-                'verified': False,
-                'keyboard_rhythm': 0.0,
-                'mouse_naturalness': 0.0,
-                'session_behavior': 0.0,
-                'raw': {}
-            }
+            scores = {'human_probability': 30.0, 'verified': False}
         
-        # Validate and ensure human_score is never NaN
-        human_score = scores.get('human_score', 0.0)
-        if human_score is None or (isinstance(human_score, float) and (human_score != human_score)):  # NaN check
-            human_score = 0.0
+        human_score = float(scores.get('human_probability', 50.0))
+        human_score = max(0.0, min(100.0, human_score))
         
-        # Ensure human_score is within bounds
-        human_score = max(0.0, min(100.0, float(human_score)))
+        verdict = "HUMAN VERIFIED" if human_score > 60 else "BOT DETECTED"
         
-        # Generate certificate and metadata
-        content = data.get('content', '')
-        content_hash = hash_content(content) if content else 'no_content'
-        cert_id = generate_cert_id()
-        timestamp = datetime.datetime.utcnow()
-        raw = scores.get('raw', {})
+        # Generate certificate data
+        cert_id = f"verity_{uuid.uuid4().hex[:12]}"
+        content_hash = hashlib.sha256(data.get('content', '').encode()).hexdigest() if data.get('content') else "no_content"
+        timestamp = datetime.datetime.utcnow().isoformat() + 'Z'
         
-        # Save certificate (with error handling)
-        try:
-            cert_data = {
-                'id': cert_id,
-                'content_hash': content_hash,
-                'human_score': float(human_score),
-                'verified': bool(scores.get('verified', False)),
-                'timestamp': timestamp,
-                'keyboard_rhythm': float(scores.get('keyboard_rhythm', 0)),
-                'mouse_naturalness': float(scores.get('mouse_naturalness', 0)),
-                'session_behavior': float(scores.get('session_behavior', 0)),
-                'baseline_match': float(scores['baseline_match']) if scores.get('baseline_match') is not None else None,
-                'dwell_mean': float(raw.get('dwell_mean_ms', 0)),
-                'flight_mean': float(raw.get('flight_mean_ms', 0)),
-                'backspace_ratio': float(raw.get('backspace_ratio', 0)),
-                'mouse_speed_mean': float(raw.get('mouse_speed_mean', 0)),
-                'mouse_jerk_mean': float(raw.get('mouse_jerk_mean', 0)),
-                'session_duration': float(raw.get('session_duration_s', 0)),
-                'total_keys': int(raw.get('total_keys', 0)),
-                'raw_signals': json.dumps(raw)
-            }
-            save_certificate(cert_data)
-        except Exception as e:
-            print(f"Certificate save error: {e}")
-        
-        # Return clean response
         response = {
-            'certificate_id': cert_id,
-            'content_hash': content_hash,
-            'human_score': float(human_score),
-            'verified': bool(scores.get('verified', False)),
-            'verdict': 'HUMAN VERIFIED' if scores.get('verified', False) else 'BOT DETECTED',
-            'timestamp': timestamp.isoformat() + 'Z',
-            'breakdown': {
-                'keyboard_rhythm': float(scores.get('keyboard_rhythm', 0)),
-                'mouse_naturalness': float(scores.get('mouse_naturalness', 0)),
-                'session_behavior': float(scores.get('session_behavior', 0)),
-                'baseline_match': float(scores['baseline_match']) if scores.get('baseline_match') is not None else None
-            },
-            'raw': raw
+            "certificate_id": cert_id,
+            "content_hash": content_hash,
+            "human_score": human_score,
+            "verified": human_score > 60,
+            "verdict": verdict,
+            "timestamp": timestamp,
+            "breakdown": scores.get('breakdown', {}),
+            "raw": scores.get('raw', {})
         }
+        
+        # Save to DB if save_certificate exists
+        try:
+            save_certificate(response)
+        except:
+            pass  # optional
         
         return jsonify(response)
         
     except Exception as e:
-        print(f"Critical error in /verify: {e}")
+        print(f"Verify error: {e}")
         return jsonify({
-            'error': f'Verification failed: {str(e)}',
-            'human_score': 0.0,
-            'verdict': 'BOT DETECTED',
-            'verified': False,
-            'certificate_id': None,
-            'timestamp': None,
-            'breakdown': {
-                'keyboard_rhythm': 0.0,
-                'mouse_naturalness': 0.0,
-                'session_behavior': 0.0,
-                'baseline_match': None
-            },
-            'raw': {}
+            "error": str(e),
+            "human_score": 0.0,
+            "verified": False,
+            "verdict": "BOT DETECTED",
+            "certificate_id": None,
+            "timestamp": None
         }), 500
 
 @app.route('/certificate/<cert_id>', methods=['GET'])
