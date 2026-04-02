@@ -201,13 +201,15 @@ This demonstrates strong behavioral signal detection. Real humans score consiste
 
 ---
 
-## 🤖 Model on Hugging Face
+## 📦 Model on Hugging Face
 
-**Verity Model** is now available on Hugging Face:
+The trained Verity model is available on Hugging Face:
 
-→ https://huggingface.co/Avadhutparbhane/verity-model
+**Repository**: [Avadhutparbhane/verity-model](https://huggingface.co/Avadhutparbhane/verity-model)
 
-### How to load the model:
+**Direct Link**: https://huggingface.co/Avadhutparbhane/verity-model
+
+You can load it easily using:
 ```python
 from huggingface_hub import hf_hub_download
 import torch

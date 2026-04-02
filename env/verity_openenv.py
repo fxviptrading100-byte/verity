@@ -1,4 +1,6 @@
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from typing import Optional, List
 import numpy as np
@@ -14,6 +16,19 @@ app = FastAPI(
     description="Human verification RL environment — OpenEnv compatible",
     version="1.0.0"
 )
+
+# Mount static files
+app.mount("/static", StaticFiles(directory="frontend", html=True), name="static")
+
+# Serve frontend at root
+@app.get("/")
+async def read_root():
+    return FileResponse("frontend/index.html")
+
+# Serve verity-sdk.js
+@app.get("/verity-sdk.js")
+async def serve_sdk():
+    return FileResponse("frontend/verity-sdk.js")
 
 env = VerityEnv()
 
