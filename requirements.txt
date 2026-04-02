@@ -9,3 +9,7 @@ psycopg2-binary
 sqlalchemy
 python-dotenv
 gunicorn
+fastapi
+uvicorn
+requests
+huggingface_hub

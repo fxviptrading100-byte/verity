@@ -1,0 +1,11 @@
+pycache/
+*.pyc
+*.pyo
+*.pyd
+.git/
+.gitignore
+*.log
+.env
+.env.example
+*.zip
+node_modules/
