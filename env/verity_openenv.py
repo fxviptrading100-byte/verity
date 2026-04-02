@@ -30,6 +30,104 @@ async def read_root():
 async def serve_sdk():
     return FileResponse("frontend/verity-sdk.js")
 
+# Add /verify endpoint for frontend
+@app.post("/verify")
+async def verify_endpoint(request):
+    """Handle verification requests from frontend SDK"""
+    try:
+        # Import required modules
+        import json
+        import sys
+        import os
+        from datetime import datetime
+        import uuid
+        import hashlib
+        
+        # Add model path
+        sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        from model.scorer import score_signals
+        
+        # Parse request body
+        data = await request.json()
+        
+        # Ensure required fields exist with defaults
+        if 'keyboard' not in data:
+            data['keyboard'] = {}
+        if 'mouse' not in data:
+            data['mouse'] = {}
+        if 'session' not in data:
+            data['session'] = {}
+        if 'device_score' not in data:
+            data['device_score'] = 0.5
+        if 'content_length' not in data:
+            data['content_length'] = len(data.get('content', ''))
+        
+        # Call scorer with error handling
+        try:
+            scores = score_signals(data)
+        except Exception as e:
+            print(f"Scorer error: {e}")
+            scores = {
+                'human_score': 0.0,
+                'verified': False,
+                'keyboard_rhythm': 0.0,
+                'mouse_naturalness': 0.0,
+                'session_behavior': 0.0,
+                'raw': {}
+            }
+        
+        # Validate and ensure human_score is never NaN
+        human_score = scores.get('human_score', 0.0)
+        if human_score is None or (isinstance(human_score, float) and (human_score != human_score)):  # NaN check
+            human_score = 0.0
+        
+        # Ensure human_score is within bounds
+        human_score = max(0.0, min(100.0, float(human_score)))
+        
+        # Generate certificate and metadata
+        content = data.get('content', '')
+        content_hash = hashlib.sha256(content.encode()).hexdigest()[:16] if content else 'no_content'
+        cert_id = 'verity_' + uuid.uuid4().hex[:10]
+        timestamp = datetime.datetime.utcnow()
+        raw = scores.get('raw', {})
+        
+        # Return clean response
+        response = {
+            'certificate_id': cert_id,
+            'content_hash': content_hash,
+            'human_score': float(human_score),
+            'verified': bool(scores.get('verified', False)),
+            'verdict': 'HUMAN VERIFIED' if scores.get('verified', False) else 'BOT DETECTED',
+            'timestamp': timestamp.isoformat() + 'Z',
+            'breakdown': {
+                'keyboard_rhythm': float(scores.get('keyboard_rhythm', 0)),
+                'mouse_naturalness': float(scores.get('mouse_naturalness', 0)),
+                'session_behavior': float(scores.get('session_behavior', 0)),
+                'baseline_match': float(scores['baseline_match']) if scores.get('baseline_match') is not None else None
+            },
+            'raw': raw
+        }
+        
+        return response
+        
+    except Exception as e:
+        print(f"Critical error in /verify: {e}")
+        return {
+            'error': f'Verification failed: {str(e)}',
+            'human_score': 0.0,
+            'verdict': 'BOT DETECTED',
+            'verified': False,
+            'certificate_id': None,
+            'timestamp': None,
+            'breakdown': {
+                'keyboard_rhythm': 0.0,
+                'mouse_naturalness': 0.0,
+                'session_behavior': 0.0,
+                'baseline_match': None
+            },
+            'raw': {}
+        }
+
 env = VerityEnv()
 
 class Action(BaseModel):
