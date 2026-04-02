@@ -253,7 +253,7 @@
       const signals = Verity.collectSignals();
       signals.content = content;
 
-      const res = await fetch('/verify-raw', {
+      const res = await fetch('/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(signals)
