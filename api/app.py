@@ -155,7 +155,7 @@ def verify():
     try:
         data = request.get_json(silent=True) or {}
         
-        # Call the existing scorer safely
+        # Call the real scorer (use whatever scorer you have)
         from model.scorer import score_signals
         
         scores = score_signals(data)
@@ -165,7 +165,10 @@ def verify():
         
         verdict = "HUMAN VERIFIED" if human_score >= 60 else "BOT DETECTED"
         
-        import uuid, datetime, hashlib
+        import uuid
+        import datetime
+        import hashlib
+        
         cert_id = f"verity_{uuid.uuid4().hex[:12]}"
         content = data.get('content', '')
         content_hash = hashlib.sha256(content.encode()).hexdigest() if content else "no_content"
@@ -179,7 +182,7 @@ def verify():
             "verdict": verdict,
             "timestamp": timestamp,
             "breakdown": scores.get('breakdown', {}),
-            "raw": scores.get('raw', data)
+            "raw": data
         }
         
         return jsonify(response)
@@ -187,7 +190,7 @@ def verify():
     except Exception as e:
         print("Verify error:", str(e))
         return jsonify({
-            "error": "Verification failed",
+            "error": str(e),
             "human_score": 0.0,
             "verified": False,
             "verdict": "BOT DETECTED",
