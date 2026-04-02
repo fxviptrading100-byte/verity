@@ -155,58 +155,39 @@ def verify():
     try:
         data = request.get_json(silent=True) or {}
         
-        # Extract data with safe defaults
-        kb = data.get('keyboard', {})
-        ms = data.get('mouse', {})
-        sess = data.get('session', {})
+        # Call the existing scorer safely
+        from model.scorer import score_signals
         
-        # Call real scorer
-        try:
-            scores = score_signals({
-                'keyboard': kb,
-                'mouse': ms,
-                'session': sess,
-                'content': data.get('content', ''),
-                'device_score': data.get('device_score', 0.5),
-                'content_length': len(data.get('content', ''))
-            })
-        except Exception as e:
-            print(f"Scorer error: {e}")
-            scores = {'human_probability': 30.0, 'verified': False}
+        scores = score_signals(data)
         
-        human_score = float(scores.get('human_probability', 50.0))
+        human_score = float(scores.get('human_score', scores.get('human_probability', 50.0)))
         human_score = max(0.0, min(100.0, human_score))
         
-        verdict = "HUMAN VERIFIED" if human_score > 60 else "BOT DETECTED"
+        verdict = "HUMAN VERIFIED" if human_score >= 60 else "BOT DETECTED"
         
-        # Generate certificate data
+        import uuid, datetime, hashlib
         cert_id = f"verity_{uuid.uuid4().hex[:12]}"
-        content_hash = hashlib.sha256(data.get('content', '').encode()).hexdigest() if data.get('content') else "no_content"
+        content = data.get('content', '')
+        content_hash = hashlib.sha256(content.encode()).hexdigest() if content else "no_content"
         timestamp = datetime.datetime.utcnow().isoformat() + 'Z'
         
         response = {
             "certificate_id": cert_id,
             "content_hash": content_hash,
-            "human_score": human_score,
-            "verified": human_score > 60,
+            "human_score": round(human_score, 1),
+            "verified": human_score >= 60,
             "verdict": verdict,
             "timestamp": timestamp,
             "breakdown": scores.get('breakdown', {}),
-            "raw": scores.get('raw', {})
+            "raw": scores.get('raw', data)
         }
-        
-        # Save to DB if save_certificate exists
-        try:
-            save_certificate(response)
-        except:
-            pass  # optional
         
         return jsonify(response)
         
     except Exception as e:
-        print(f"Verify error: {e}")
+        print("Verify error:", str(e))
         return jsonify({
-            "error": str(e),
+            "error": "Verification failed",
             "human_score": 0.0,
             "verified": False,
             "verdict": "BOT DETECTED",
