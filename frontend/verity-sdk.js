@@ -300,6 +300,7 @@
     verify: async function(content, apiUrl) {
       const signals = this.collectSignals();
       signals.content = content;
+      signals.content_length = content.length; // Use character count, not word count
 
       const response = await fetch((apiUrl || '') + '/verify', {
         method: 'POST',

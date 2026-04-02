@@ -252,7 +252,6 @@
     try {
       const signals = Verity.collectSignals();
       signals.content = content;
-      signals.content_length = content.trim().split(/\s+/).length;
 
       const res = await fetch('/verify', {
         method: 'POST',
