@@ -146,6 +146,10 @@ def serve_sdk():
         mimetype='application/javascript'
     )
 
+@app.route('/favicon.ico')
+def favicon():
+    return '', 204  # No content
+
 @app.route('/health', methods=['GET'])
 def health():
     return jsonify({'status': 'ok', 'product': 'Verity'})
