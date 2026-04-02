@@ -8,16 +8,15 @@ import os
 app = Flask(__name__, static_folder='../frontend', static_url_path='')
 CORS(app)
 
-# Simple, reliable scorer
 def score_signals(data):
+    """Simple reliable scorer"""
     try:
         kb = data.get('keyboard', {})
         ms = data.get('mouse', {})
         
-        # Use whatever variance fields are available
-        dwell_var = float(kb.get('dwell_std', kb.get('dwell_std_ms', 30)))
-        flight_var = float(kb.get('flight_std', kb.get('flight_std_ms', 50)))
-        mouse_var = float(ms.get('speed_std', ms.get('mouse_speed_std', 150)))
+        dwell_var = float(kb.get('dwell_std', 30))
+        flight_var = float(kb.get('flight_std', 50))
+        mouse_var = float(ms.get('speed_std', 150))
         
         variance = (dwell_var + flight_var + mouse_var) / 3
         human_score = max(15, min(95, 45 + variance * 1.1))
@@ -50,6 +49,8 @@ def verify():
         scores = score_signals(data)
         
         human_score = float(scores['human_score'])
+        human_score = max(0, min(100, human_score))
+        
         verdict = "HUMAN VERIFIED" if human_score >= 60 else "BOT DETECTED"
         
         cert_id = f"verity_{uuid.uuid4().hex[:12]}"
