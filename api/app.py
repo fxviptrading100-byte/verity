@@ -45,6 +45,7 @@ def static_files(path):
 def verify():
     try:
         data = request.get_json(silent=True) or {}
+        print("Received data keys:", list(data.keys()) if data else "No data")
         
         scores = score_signals(data)
         
